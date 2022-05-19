@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Incrowd Task</string>
+    <string name="home_team_players">Home Team Players</string>
+    <string name="away_team_players">Away Team Players</string>
+</resources>
