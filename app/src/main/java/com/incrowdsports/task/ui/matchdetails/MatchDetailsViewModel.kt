@@ -9,7 +9,6 @@ import com.incrowdsports.task.data.models.MatchResponse
 import com.incrowdsports.task.data.models.NetworkResult
 import com.incrowdsports.task.data.models.Player
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class MatchDetailsViewModel(
@@ -17,9 +16,6 @@ class MatchDetailsViewModel(
 ) : ViewModel() {
 
     private var matchId: Long? = null
-
-    private val _response: MutableLiveData<NetworkResult<MatchResponse>> = MutableLiveData()
-    val response: LiveData<NetworkResult<MatchResponse>> = _response
 
     private val _tvHomeTeamNameLiveData = MutableLiveData<String>()
     val tvHomeTeamNameLiveData: LiveData<String> = _tvHomeTeamNameLiveData
@@ -51,6 +47,9 @@ class MatchDetailsViewModel(
     private val _ivAwayTeamLogoLiveData = MutableLiveData<String>()
     val ivAwayTeamLogoLiveData: LiveData<String> = _ivAwayTeamLogoLiveData
 
+    private val _progressVisibilityLiveData = MutableLiveData<Boolean>()
+    val progressVisibilityLiveData: LiveData<Boolean> = _progressVisibilityLiveData
+
     fun onViewCreated(matchId: Long?) {
         this.matchId = matchId
         loadData()
@@ -60,13 +59,17 @@ class MatchDetailsViewModel(
         matchId?.let {
             viewModelScope.launch(Dispatchers.Main) {
                 repository.getMatchDetails(it).collect {
-                    _response.value = it
-                    if (it is NetworkResult.Success<MatchResponse>) {
-                        updateUI(it.data)
+                    when (it) {
+                        is NetworkResult.Error -> _progressVisibilityLiveData.value = false
+                        is NetworkResult.Loading -> _progressVisibilityLiveData.value = true
+                        is NetworkResult.Success -> {
+                            _progressVisibilityLiveData.value = false
+                            updateUI(it.data)
+                        }
                     }
                 }
             }
-        } ?: run { _response.value = NetworkResult.Error("matchID cannot be null") }
+        }
     }
 
     private fun updateUI(data: MatchResponse?) {

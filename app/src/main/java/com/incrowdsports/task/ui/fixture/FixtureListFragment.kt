@@ -6,7 +6,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.incrowdsports.task.R
 import com.incrowdsports.task.data.models.Fixture
-import com.incrowdsports.task.data.models.NetworkResult
 import com.incrowdsports.task.databinding.FixtureListFragmentBinding
 import com.incrowdsports.task.ui.MainActivity
 import com.incrowdsports.task.ui.adapter.FixtureListAdapter
@@ -19,7 +18,6 @@ class FixtureListFragment : Fragment(R.layout.fixture_list_fragment) {
     private val viewModel: FixtureListViewModel by viewModel()
     private val fixtureListAdapter = FixtureListAdapter {
         (activity as MainActivity).supportFragmentManager.commit {
-            addToBackStack(null)
             replace(R.id.fragmentContainerView, MatchDetailsFragment.newInstance(it.feedMatchId))
         }
     }
@@ -39,22 +37,16 @@ class FixtureListFragment : Fragment(R.layout.fixture_list_fragment) {
 
     override fun onResume() {
         super.onResume()
-        viewModel.onResume(COMP_ID, SEASON)
+        viewModel.onResume()
     }
 
     private fun observeViewModel() {
-        viewModel.response.observe(viewLifecycleOwner) { response ->
-            when (response) {
-                is NetworkResult.Error -> {
-                    binding.swipeRefreshLayout.isRefreshing = false
-                }
-                is NetworkResult.Loading -> {
-                    binding.swipeRefreshLayout.isRefreshing = true
-                }
-                is NetworkResult.Success -> renderFixtureList(
-                    fixtureList = response.data?.data ?: arrayListOf()
-                )
-            }
+        viewModel.progressVisibilityLiveData.observe(viewLifecycleOwner) {
+            binding.swipeRefreshLayout.isRefreshing = it
+        }
+
+        viewModel.rvMatchesListLiveData.observe(viewLifecycleOwner) {
+            renderFixtureList(it)
         }
     }
 
@@ -65,8 +57,5 @@ class FixtureListFragment : Fragment(R.layout.fixture_list_fragment) {
 
     companion object {
         fun newInstance() = FixtureListFragment()
-        private const val COMP_ID = 8
-        private const val SEASON = 2021
-
     }
 }

@@ -5,10 +5,8 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import coil.load
 import com.incrowdsports.task.R
-import com.incrowdsports.task.data.models.NetworkResult
 import com.incrowdsports.task.databinding.FragmentMatchDetailsBinding
 import com.incrowdsports.task.ui.adapter.PlayersListAdapter
-import com.incrowdsports.task.ui.fixture.FixtureListFragment
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MatchDetailsFragment : Fragment(R.layout.fragment_match_details) {
@@ -31,12 +29,8 @@ class MatchDetailsFragment : Fragment(R.layout.fragment_match_details) {
     }
 
     private fun observeViewModel() {
-        viewModel.response.observe(viewLifecycleOwner) {
-            when(it) {
-                is NetworkResult.Loading -> binding.swipeRefreshLayout.isRefreshing = true
-                is NetworkResult.Error,
-                is NetworkResult.Success -> binding.swipeRefreshLayout.isRefreshing = false
-            }
+        viewModel.progressVisibilityLiveData.observe(viewLifecycleOwner) {
+            binding.swipeRefreshLayout.isRefreshing = it
         }
 
         viewModel.tvHomeTeamNameLiveData.observe(viewLifecycleOwner) {

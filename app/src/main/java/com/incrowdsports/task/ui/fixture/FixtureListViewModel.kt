@@ -5,23 +5,20 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.incrowdsports.task.data.Repository
-import com.incrowdsports.task.data.models.FixtureResponse
+import com.incrowdsports.task.data.models.Fixture
 import com.incrowdsports.task.data.models.NetworkResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class FixtureListViewModel(private val repository: Repository) : ViewModel() {
 
-    private var compId: Int = 0
-    private var season: Int = 0
+    private val _progressVisibilityLiveData = MutableLiveData<Boolean>()
+    val progressVisibilityLiveData: LiveData<Boolean> = _progressVisibilityLiveData
 
-    private val _response: MutableLiveData<NetworkResult<FixtureResponse>> = MutableLiveData()
-    val response: LiveData<NetworkResult<FixtureResponse>> = _response
+    private val _rvMatchesListLiveData = MutableLiveData<MutableList<Fixture>>()
+    val rvMatchesListLiveData: LiveData<MutableList<Fixture>> = _rvMatchesListLiveData
 
-    fun onResume(compId: Int, season: Int) {
-        this.compId = compId
-        this.season = season
+    fun onResume() {
         loadData()
     }
 
@@ -32,9 +29,22 @@ class FixtureListViewModel(private val repository: Repository) : ViewModel() {
 
     private fun loadData() {
         viewModelScope.launch(Dispatchers.Main) {
-            repository.getFixtureList(compId = compId, season = season, size = 10).collect {
-                _response.value = it
+            repository.getFixtureList(compId = COMP_ID, season = SEASON, size = PAGE_SIZE).collect {
+                when (it) {
+                    is NetworkResult.Error -> _progressVisibilityLiveData.value = false
+                    is NetworkResult.Loading -> _progressVisibilityLiveData.value = true
+                    is NetworkResult.Success -> {
+                        _progressVisibilityLiveData.value = false
+                        _rvMatchesListLiveData.value = it.data?.data?.toMutableList()
+                    }
+                }
             }
         }
+    }
+
+    companion object {
+        private const val PAGE_SIZE = 10
+        private const val COMP_ID = 8
+        private const val SEASON = 2021
     }
 }
